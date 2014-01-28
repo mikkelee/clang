@@ -9523,6 +9523,48 @@ ExprResult Sema::ActOnBinOp(Scope *S, SourceLocation TokLoc,
   return BuildBinOp(S, TokLoc, Opc, LHSExpr, RHSExpr);
 }
 
+/// Translate binary operator expression with Objective-C types to method call
+static ExprResult BuildObjCBinOp(Sema &S, Scope *Sc, SourceLocation OpLoc,
+                                 BinaryOperatorKind Opc,
+                                 Expr *LHS, Expr *RHS) {
+  
+  IdentifierInfo *SelectorId = NULL;
+  MultiExprArg Args = MultiExprArg(RHS);
+  
+  if (RHS->getType()->isObjCObjectPointerType()) {
+    switch (Opc) {
+      case BO_Add:
+        SelectorId = &S.Context.Idents.get("objectByAddingObject");
+        break;
+      case BO_Sub:
+        SelectorId = &S.Context.Idents.get("objectBySubtractingObject");
+        break;
+      case BO_Mul:
+        SelectorId = &S.Context.Idents.get("objectByMultiplyingObject");
+        break;
+      case BO_Div:
+        SelectorId = &S.Context.Idents.get("objectByDividingObject");
+        break;
+      default:
+        break;
+    }
+  } else {
+    // TODO decide how to handle
+    // implicit boxing of primitive or a special selector?
+    // or just do nothing as now
+  }
+  
+  if (SelectorId != NULL) {
+    Selector Sel = S.Context.Selectors.getUnarySelector(SelectorId);
+    
+    return S.BuildInstanceMessageImplicit(LHS, LHS->getType(),
+                                          OpLoc, Sel, /*Method=*/0, 
+                                          Args);   
+  } else {
+    return S.CreateBuiltinBinOp(OpLoc, Opc, LHS, RHS);
+  }
+}
+
 /// Build an overloaded binary operator expression in the given scope.
 static ExprResult BuildOverloadedBinOp(Sema &S, Scope *Sc, SourceLocation OpLoc,
                                        BinaryOperatorKind Opc,
@@ -9615,6 +9657,11 @@ ExprResult Sema::BuildBinOp(Scope *S, SourceLocation OpLoc,
     if (LHSExpr->getType()->isOverloadableType() ||
         RHSExpr->getType()->isOverloadableType())
       return BuildOverloadedBinOp(*this, S, OpLoc, Opc, LHSExpr, RHSExpr);
+  }
+  
+  if (getLangOpts().ObjCArithmeticOverloading) {
+    if (LHSExpr->getType()->isObjCObjectPointerType())
+      return BuildObjCBinOp(*this, S, OpLoc, Opc, LHSExpr, RHSExpr);
   }
 
   // Build a built-in binary operation.

@@ -3619,6 +3619,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   if (Args.hasFlag(options::OPT_fapple_pragma_pack,
                    options::OPT_fno_apple_pragma_pack, false))
     CmdArgs.push_back("-fapple-pragma-pack");
+  
+  if (Args.hasFlag(options::OPT_fobjc_arithmetic_overloading, 
+                   options::OPT_fno_objc_arithmetic_overloading, false))
+    CmdArgs.push_back("-fobjc-arithmetic-overloading");
 
   // le32-specific flags: 
   //  -fno-math-builtin: clang should not convert math builtins to intrinsics

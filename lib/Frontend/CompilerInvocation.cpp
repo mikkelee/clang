@@ -1379,6 +1379,10 @@ static void ParseLangArgs(LangOptions &Opts, ArgList &Args, InputKind IK,
   Opts.ApplePragmaPack = Args.hasArg(OPT_fapple_pragma_pack);
   Opts.CurrentModule = Args.getLastArgValue(OPT_fmodule_name);
 
+  Opts.ObjCArithmeticOverloading = Args.hasFlag(OPT_fobjc_arithmetic_overloading,
+                                                OPT_fno_objc_arithmetic_overloading,
+                                                false);
+  
   if (Arg *A = Args.getLastArg(OPT_faddress_space_map_mangling_EQ)) {
     switch (llvm::StringSwitch<unsigned>(A->getValue())
       .Case("target", LangOptions::ASMM_Target)
